@@ -10,12 +10,12 @@
         {{ item.label }}
       </li>
     </ul>
-    <el-form :ref="form" :model="form" label-width="80px">
-      <el-form-item>
+    <el-form label-width="80px" :ref="form" :model="form" :rules="form_rules">
+      <el-form-item prop="username">
         <label class="form-label">用户名</label>
         <el-input v-model="form.username"></el-input>
       </el-form-item>
-      <el-form-item>
+      <el-form-item prop="password">
         <label class="form-label">密码</label>
         <el-input
           type="password"
@@ -23,7 +23,7 @@
           show-password
         ></el-input>
       </el-form-item>
-      <el-form-item v-show="current_menu === 'register'">
+      <el-form-item prop="confirmpassword" v-if="current_menu === 'register'">
         <label class="form-label">确认密码</label>
         <el-input
           type="password"
@@ -31,7 +31,7 @@
           show-password
         ></el-input>
       </el-form-item>
-      <el-form-item>
+      <el-form-item prop="code">
         <label class="form-label">验证码</label>
         <el-row :gutter="10">
           <el-col :span="14">
@@ -55,9 +55,34 @@
 
 <script>
 import { toRefs, reactive } from "vue";
+import {
+  validate,
+  validate_email,
+  validate_password,
+  validate_confirm_password,
+  validate_code,
+} from "@/utils/validate";
 
 export default {
   setup(prop, { root }) {
+    // 校验函数
+    const validator_username = (_, username, callback) => {
+      validate(validate_email(username), callback);
+    };
+
+    const validator_password = (_, password, callback) => {
+      validate(validate_password(password), callback);
+    };
+
+    const validator_confirm_password = (_, confirm, callback) => {
+      const message = validate_confirm_password(data.form.password, confirm);
+      validate(message, callback);
+    };
+
+    const validator_code = (_, code, callback) => {
+      validate(validate_code(code), callback);
+    };
+
     const data = reactive({
       tab_menu: [
         { type: "login", label: "登陆" },
@@ -70,6 +95,14 @@ export default {
         password: "",
         confirmpassword: "",
         code: "",
+      },
+      form_rules: {
+        username: [{ validator: validator_username, trigger: "change" }],
+        password: [{ validator: validator_password, trigger: "change" }],
+        confirmpassword: [
+          { validator: validator_confirm_password, trigger: "change" },
+        ],
+        code: [{ validator: validator_code, trigger: "change" }],
       },
     });
 
