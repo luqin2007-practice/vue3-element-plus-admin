@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import { toRefs, reactive } from "vue";
+import { toRefs, reactive, getCurrentInstance } from "vue";
 import {
   validate,
   validate_email,
@@ -65,6 +65,10 @@ import {
 
 export default {
   setup(prop, { root }) {
+    const { ctx, proxy } = getCurrentInstance();
+    console.log(ctx);
+    console.log(proxy);
+
     // 校验函数
     const validator_username = (_, username, callback) => {
       validate(validate_email(username), callback);
