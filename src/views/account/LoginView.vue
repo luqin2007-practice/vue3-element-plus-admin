@@ -2,38 +2,45 @@
   <div class="form-wrap">
     <ul class="menu-tab">
       <li
+        v-for="item in tab_menu"
         :class="{ current: current_menu === item.type }"
-        v-for="item in data.tab_menu"
         :key="item.type"
         @click="toggleMenu(item.type)"
       >
         {{ item.label }}
       </li>
     </ul>
-    <el-form ref="form" :model="form" label-width="80px">
+    <el-form :ref="form" :model="form" label-width="80px">
       <el-form-item>
         <label class="form-label">用户名</label>
-        <el-input></el-input>
+        <el-input v-model="form.username"></el-input>
       </el-form-item>
       <el-form-item>
         <label class="form-label">密码</label>
-        <el-input type="password" show-password></el-input>
+        <el-input
+          type="password"
+          v-model="form.password"
+          show-password
+        ></el-input>
       </el-form-item>
       <el-form-item v-show="current_menu === 'register'">
         <label class="form-label">确认密码</label>
-        <el-input type="password" show-password></el-input>
+        <el-input
+          type="password"
+          v-model="form.confirmpassword"
+          show-password
+        ></el-input>
       </el-form-item>
       <el-form-item>
         <label class="form-label">验证码</label>
-        <!-- gutter=10 span=[14, 10] -->
         <el-row :gutter="10">
           <el-col :span="14">
-            <el-input></el-input>
+            <el-input v-model="form.code"></el-input>
           </el-col>
           <el-col :span="10">
             <el-button class="el-button-block" type="success">
               获取验证码
-            </el-button>  
+            </el-button>
           </el-col>
         </el-row>
       </el-form-item>
@@ -47,7 +54,7 @@
 </template>
 
 <script>
-import { ref, reactive } from "vue";
+import { toRefs, reactive } from "vue";
 
 export default {
   setup(prop, { root }) {
@@ -56,13 +63,21 @@ export default {
         { type: "login", label: "登陆" },
         { type: "register", label: "注册" },
       ],
+      current_menu: "login",
+      // 表单数据
+      form: {
+        username: "",
+        password: "",
+        confirmpassword: "",
+        code: "",
+      },
     });
 
-    let current_menu = ref(data.tab_menu[0].type);
+    const toggleMenu = (type) => (data.current_menu = type);
 
-    const toggleMenu = (type) => (current_menu.value = type);
+    const dataItem = toRefs(data);
 
-    return { data, current_menu, toggleMenu };
+    return { toggleMenu, ...dataItem };
   },
 };
 </script>
