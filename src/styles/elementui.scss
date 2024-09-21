@@ -1,5 +1,11 @@
+@import "element-plus/theme-chalk/src/message.scss";
+
 // 自适应父级宽度
 .el-button-block {
     display: block;
     width: 100%;
+}
+
+#layout-aside .el-menu {
+    border-right: none;
 }

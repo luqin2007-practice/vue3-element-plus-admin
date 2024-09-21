@@ -10,7 +10,12 @@
         {{ item.label }}
       </li>
     </ul>
-    <el-form label-width="80px" :ref="form" :model="form" :rules="form_rules">
+    <el-form
+      label-width="80px"
+      ref="account_form"
+      :model="form"
+      :rules="form_rules"
+    >
       <el-form-item prop="username">
         <label class="form-label">用户名</label>
         <el-input v-model="form.username"></el-input>
@@ -38,14 +43,25 @@
             <el-input v-model="form.code"></el-input>
           </el-col>
           <el-col :span="10">
-            <el-button class="el-button-block" type="success">
-              获取验证码
+            <el-button
+              class="el-button-block"
+              type="success"
+              @click="getCode"
+              :disable="code_btn_state.disable"
+              :loading="code_btn_state.waiting_time > 0"
+            >
+              {{ getCodeButtonText() }}
             </el-button>
           </el-col>
         </el-row>
       </el-form-item>
       <el-form-item>
-        <el-button class="el-button-block" type="danger" @click="submit">
+        <el-button
+          class="el-button-block"
+          type="danger"
+          @click="submitForm"
+          :disable="submit_btn_disable"
+        >
           {{ current_menu === "login" ? "登陆" : "立即加入" }}
         </el-button>
       </el-form-item>
@@ -54,37 +70,31 @@
 </template>
 
 <script>
-import { toRefs, reactive, getCurrentInstance } from "vue";
-import {
-  validate,
-  validate_email,
-  validate_password,
-  validate_confirm_password,
-  validate_code,
-} from "@/utils/validate";
+import { toRefs, reactive, getCurrentInstance, onBeforeUnmount } from "vue";
+import tester from "@/utils/validate";
+import accountApi from "@/api/account";
+import sha1 from "js-sha1";
 
 export default {
-  setup(prop, { root }) {
-    const { ctx, proxy } = getCurrentInstance();
-    console.log(ctx);
-    console.log(proxy);
+  setup() {
+    const { proxy } = getCurrentInstance();
 
     // 校验函数
-    const validator_username = (_, username, callback) => {
-      validate(validate_email(username), callback);
+    const validatorUsername = (_, username, callback) => {
+      tester.validate(tester.testEmail(username), callback);
     };
 
-    const validator_password = (_, password, callback) => {
-      validate(validate_password(password), callback);
+    const validatorPassword = (_, password, callback) => {
+      tester.validate(tester.testPassword(password), callback);
     };
 
-    const validator_confirm_password = (_, confirm, callback) => {
-      const message = validate_confirm_password(data.form.password, confirm);
-      validate(message, callback);
+    const validatorConfirmPassword = (_, confirm, callback) => {
+      const message = tester.testConfirmPassword(data.form.password, confirm);
+      tester.validate(message, callback);
     };
 
-    const validator_code = (_, code, callback) => {
-      validate(validate_code(code), callback);
+    const validatorCode = (_, code, callback) => {
+      tester.validate(tester.testCode(code), callback);
     };
 
     const data = reactive({
@@ -101,20 +111,156 @@ export default {
         code: "",
       },
       form_rules: {
-        username: [{ validator: validator_username, trigger: "change" }],
-        password: [{ validator: validator_password, trigger: "change" }],
+        username: [{ validator: validatorUsername, trigger: "change" }],
+        password: [{ validator: validatorPassword, trigger: "change" }],
         confirmpassword: [
-          { validator: validator_confirm_password, trigger: "change" },
+          { validator: validatorConfirmPassword, trigger: "change" },
         ],
-        code: [{ validator: validator_code, trigger: "change" }],
+        code: [{ validator: validatorCode, trigger: "change" }],
       },
+      code_btn_state: {
+        disable: false,
+        loaded: false,
+        waiting_time: 0,
+        timer: 0,
+      },
+      submit_btn_disable: true,
     });
 
     const toggleMenu = (type) => (data.current_menu = type);
 
-    const dataItem = toRefs(data);
+    /*
+    const getCode = () => {
+      // 测试错误连接
+      accountApi.getError().catch((error) => {
+        console.log(error);
+        proxy.$message({
+          message: error.message,
+          type: "error",
+        });
+      });
+    };
+    */
 
-    return { toggleMenu, ...dataItem };
+    const getCode = () => {
+      let module;
+      if (data.current_menu === data.tab_menu[0].type) {
+        module = data.tab_menu[0].type;
+      } else {
+        module = data.tab_menu[1].type;
+      }
+      const userOk = tester.testEmail(data.form.username);
+      if (userOk) {
+        proxy.$message({
+          message: userOk,
+          type: "error",
+        });
+        return;
+      }
+      data.code_btn_state.disable = true;
+      accountApi
+        .getCode(data.form.username, module)
+        .then((response) => {
+          proxy.$message({
+            message: response.data.message,
+            type: "success",
+          });
+          data.code_btn_state.disable = false;
+          data.code_btn_state.loaded = true;
+          data.code_btn_state.waiting_time = 60;
+          data.code_btn_state.timer = window.setInterval(function () {
+            data.code_btn_state.waiting_time--;
+            if (data.code_btn_state.waiting_time === 0) {
+              window.clearInterval(data.code_btn_state.timer);
+              data.code_btn_state.timer = 0;
+            }
+          }, 1000);
+        })
+        .catch((error) => {
+          proxy.$message({
+            message: error.data.message,
+            type: "error",
+          });
+          data.code_btn_state.disable = false;
+        });
+    };
+
+    const getCodeButtonText = () => {
+      if (data.code_btn_state.disable) {
+        return "发送中";
+      }
+      if (data.code_btn_state.waiting_time > 0) {
+        return `${data.code_btn_state.waiting_time}s 重试`;
+      }
+      if (data.code_btn_state.loaded) {
+        return "再次获取";
+      }
+      return "获取验证码";
+    };
+
+    const submitForm = () => {
+      proxy.$refs.account_form.validate((valid) => {
+        if (valid) {
+          const username = data.form.username;
+          const password = sha1(data.form.password);
+          const code = data.form.code;
+          data.submit_btn_disable = true;
+          if (data.current_menu === "login") {
+            accountApi
+              .login(username, password, code)
+              .then((resp) => {
+                proxy.$message({
+                  message: resp.data.message,
+                  type: "success",
+                });
+              })
+              .catch((error) => {
+                proxy.$message({
+                  message: error.message,
+                  type: "error",
+                });
+              })
+              .finally(() => {
+                data.submit_btn_disable = false;
+              });
+          } else {
+            accountApi
+              .register(username, password, code)
+              .then((resp) => {
+                proxy.$message({
+                  message: resp.data.message,
+                  type: "success",
+                });
+              })
+              .catch((error) => {
+                proxy.$message({
+                  message: error.message,
+                  type: "error",
+                });
+              })
+              .finally(() => {
+                data.submit_btn_disable = false;
+              });
+          }
+        }
+      });
+    };
+
+    onBeforeUnmount(() => {
+      // 清除验证码计时器
+      if (data.code_btn_state.timer > 0) {
+        clearInterval(data.code_btn_state.timer);
+        data.code_btn_state.timer = 0;
+      }
+    });
+
+    return {
+      toggleMenu,
+      getCode,
+      getCodeButtonText,
+      submitForm,
+      ...toRefs(data),
+    };
   },
 };
 </script>

@@ -1,4 +1,4 @@
-export function validate_email(email: string): string | undefined {
+function testEmail(email: string): string | undefined {
   const regEmail = /^([a-zA-Z]|[0-9])(\w|-)+@[a-zA-Z0-9]+\.([a-zA-Z]{2,4})$/;
   if (!email) {
     return "请输入邮箱";
@@ -7,7 +7,7 @@ export function validate_email(email: string): string | undefined {
   }
 }
 
-export function validate_password(password: string): string | undefined {
+function testPassword(password: string): string | undefined {
   const regPassword = /^(?!\D+$)(?![^a-zA-Z]+$)\S{6,20}$/;
   if (!password) {
     return "请输入密码";
@@ -16,7 +16,7 @@ export function validate_password(password: string): string | undefined {
   }
 }
 
-export function validate_confirm_password(
+function testConfirmPassword(
   password: string,
   confirm: string
 ): string | undefined {
@@ -27,17 +27,25 @@ export function validate_confirm_password(
   }
 }
 
-export function validate_code(code: string): string | undefined {
+function testCode(code: string): string | undefined {
   const regCode = /^[a-z0-9]{6}$/;
   if (!regCode.test(code)) {
     return "验证码格式错误";
   }
 }
 
-export function validate(result: string | undefined, callback: any) {
+function validate(result: string | undefined, callback: any) {
   if (result) {
     callback(new Error(result));
   } else {
     callback();
   }
 }
+
+export default {
+  validate,
+  testEmail,
+  testPassword,
+  testConfirmPassword,
+  testCode,
+};
