@@ -1,21 +1,23 @@
 <template>
+  <h1 class="logo">
+    <img :src="logo" alt="手把手撸码前端" />
+  </h1>
   <el-menu
-    default-active="4"
     background-color="#344a5f"
     text-color="#fff"
     active0-text-color="#ffd04b"
+    :default-active="current_path"
   >
     <template v-for="item in routers" :key="item.path">
       <template v-if="isMenuDisplay(item)">
         <!-- 一级菜单 -->
         <el-menu-item v-if="!item.children" :index="item.path">
+          <svg-icon
+            v-if="hasIcon(item)"
+            :icon-name="item.meta.icon"
+            class-name="aside-menu-svg"
+          />
           <template #title>
-            <svg-icon
-              v-if="hasIcon(item)"
-              :icon-name="item.meta.icon"
-              class-name="aside-menu-svg"
-            >
-            </svg-icon>
             {{ item.meta.title }}
           </template>
         </el-menu-item>
@@ -24,12 +26,12 @@
           v-else-if="hasOneChildMenu(item.children)"
           :index="item.children[0].path"
         >
+          <svg-icon
+            v-if="hasIcon(item)"
+            :icon-name="item.meta.icon"
+            class-name="aside-menu-svg"
+          />
           <template #title>
-            <svg-icon
-              v-if="hasIcon(item.children[0])"
-              :icon-name="item.children[0].meta.icon"
-            >
-            </svg-icon>
             {{ item.children[0].meta.title }}
           </template>
         </el-menu-item>
@@ -40,22 +42,18 @@
               v-if="hasIcon(item)"
               :icon-name="item.meta.icon"
               class-name="aside-menu-svg"
-            >
-            </svg-icon>
+            />
             {{ item.meta.title }}
           </template>
-          <template v-for="child in item.children">
-            <template v-if="isMenuDisplay(child)">
-              <el-menu-item :key="child.path">
-                <svg-icon
-                  v-if="hasIcon(child)"
-                  :icon-name="child.meta.icon"
-                  class-name="aside-menu-svg"
-                >
-                </svg-icon>
-                {{ child.meta.title }}
-              </el-menu-item>
-            </template>
+          <template v-for="child in item.children" :key="child.path">
+            <el-menu-item v-if="isMenuDisplay(child)" :index="child.path">
+              <svg-icon
+                v-if="hasIcon(child)"
+                :icon-name="child.meta.icon"
+                class-name="aside-menu-svg"
+              />
+              {{ child.meta.title }}
+            </el-menu-item>
           </template>
         </el-sub-menu>
       </template>
@@ -63,38 +61,33 @@
   </el-menu>
 </template>
 
-<script>
-import { useRouter } from "vue-router";
+<script setup lang="ts">
+import SvgIcon from "@/components/svgIcon/SvgIcon.vue";
+import { computed } from "vue";
+import { useRouter, useRoute, RouteRecordRaw } from "vue-router";
 
-export default {
-  setup() {
-    const { options } = useRouter();
-    const routers = options.routes;
+const { options } = useRouter();
+const { path } = useRoute();
+const routers = options.routes;
 
-    return {
-      routers,
-
-      // 仅显示包含 meta.title 的项
-      isMenuDisplay(route) {
-        return route && route.meta && route.meta.title;
-      },
-
-      // 项包含图标
-      hasIcon(route) {
-        return route && route.meta && route.meta.icon;
-      },
-
-      // 仅有一项子菜单，且为第一项
-      hasOneChildMenu(children) {
-        if (children) {
-          const menu = children.filter(this.isMenuDisplay);
-          return this.isMenuDisplay(children[0]) && menu.length == 1;
-        }
-        return false;
-      },
-    };
-  },
+// 仅显示包含 meta.title 的项
+const isMenuDisplay = (route: RouteRecordRaw) => route.meta && route.meta.title;
+// 项包含图标
+const hasIcon = (route: RouteRecordRaw) => route.meta && route.meta.icon;
+// 仅有一项子菜单，且为第一项
+const hasOneChildMenu = (children: RouteRecordRaw[]) => {
+  if (children) {
+    const menu = children.filter((r) => isMenuDisplay(r));
+    return isMenuDisplay(children[0]) && menu.length == 1;
+  }
+  return false;
 };
+
+// 展开的导航
+const current_path = computed(() => path);
+
+// logo
+const logo = computed(() => require("@/assets/images/logo.png"));
 </script>
 
 <style lang="scss" scoped>
@@ -106,5 +99,23 @@ export default {
   margin-right: 5px;
   margin-top: -2px;
   font-size: 18px;
+}
+
+.is-active {
+  background-color: rgba(254, 108, 108, 0.2) !important;
+}
+
+.is-opened {
+  .el-sub-menu__title {
+    background-color: #f56c6c !important;
+  }
+}
+
+.logo {
+  padding: 20px 10px;
+  border-bottom: 1px solid #2d4153;
+  img {
+    margin: auto;
+  }
 }
 </style>

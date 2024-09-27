@@ -14,7 +14,7 @@
   </el-container>
 </template>
 
-<script>
+<script lang="ts">
 import AsideLayout from "./AsideLayout.vue";
 import HeaderLayout from "./HeaderLayout.vue";
 import MainLayout from "./MainLayout.vue";

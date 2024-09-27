@@ -23,18 +23,30 @@ module.exports = defineConfig({
   },
   chainWebpack: (config) => {
     // 配置 svg 默认规则
-    const svgRule = config.module.rule('svg');
-    svgRule.uses.clear();           // 清除已有规则
-    svgRule
-      .use('svg-sprite-loader')     // 注册规则
-        .loader('svg-sprite-loader')  // 载入规则
-        .options({
-          // symbol 元素 id
-          symbolId: "icon-[name]",
-          // 图标路径
-          include: ["./src/components/svgIcon/icons"],
-        })
-        .end();
+    // const svgRule = config.module.rule('svg');
+    // svgRule.uses.clear().end();       // 清除已有规则
+    // svgRule
+    //   .use('svg-sprite-loader')       // 注册规则
+    //     .loader('svg-sprite-loader')  // 载入规则
+    //     .options({
+    //       symbolId: "icon-[name]",    // symbol 元素 id
+    //       include: [path.resolve("./src/components/svgIcon/icons")],
+    //     })
+    //     .end();
+    const iconPath = path.resolve("./src/components/svgIcon/icons");
+    config.module
+      .rule("svg")
+      .exclude.add(iconPath)
+      .end();
+    config.module
+      .rule("svg-icons")
+      .test(/\.svg$/)
+      .include.add(iconPath)
+      .end()
+      .use("svg-sprite-loader")
+      .loader("svg-sprite-loader")
+      .options({ symbolId: "icon-[name]" })
+      .end();
   },
   devServer: {
     // 允许服务器被外界访问

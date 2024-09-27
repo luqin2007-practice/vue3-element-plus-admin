@@ -83,6 +83,10 @@ const routes: Array<RouteRecordRaw> = [
     ],
     component: () => import("@/layout/IndexLayout.vue"),
   },
+  {
+    path: "/practice_buy",
+    component: () => import("@/views/practice/BuyView.vue"),
+  },
 ];
 
 const router = createRouter({

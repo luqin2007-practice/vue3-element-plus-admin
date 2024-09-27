@@ -57,15 +57,21 @@
       </el-form-item>
       <el-form-item>
         <el-button
-          class="el-button-block"
+          class="el-button-block commit-button"
           type="danger"
           @click="submitForm"
           :disable="submit_btn_disable"
+          :loading="submit_btn_loading"
         >
           {{ current_menu === "login" ? "登陆" : "立即加入" }}
         </el-button>
       </el-form-item>
     </el-form>
+  </div>
+  <hr style="margin-top: 10px" />
+  <div>
+    <p style="color: white">测试用户名：<span>qweasd@123.com</span></p>
+    <p style="color: white">测试密码：<span>qweasd123</span></p>
   </div>
 </template>
 
@@ -98,6 +104,7 @@ export default {
     };
 
     const data = reactive({
+      // 登陆、注册
       tab_menu: [
         { type: "login", label: "登陆" },
         { type: "register", label: "注册" },
@@ -110,6 +117,7 @@ export default {
         confirmpassword: "",
         code: "",
       },
+      // 表单校验
       form_rules: {
         username: [{ validator: validatorUsername, trigger: "change" }],
         password: [{ validator: validatorPassword, trigger: "change" }],
@@ -118,6 +126,7 @@ export default {
         ],
         code: [{ validator: validatorCode, trigger: "change" }],
       },
+      // 按钮状态
       code_btn_state: {
         disable: false,
         loaded: false,
@@ -125,6 +134,7 @@ export default {
         timer: 0,
       },
       submit_btn_disable: true,
+      submit_btn_loading: false,
     });
 
     const toggleMenu = (type) => (data.current_menu = type);
@@ -142,21 +152,25 @@ export default {
     };
     */
 
+    // 请求获取验证码
     const getCode = () => {
+      // 验证码类型
       let module;
       if (data.current_menu === data.tab_menu[0].type) {
         module = data.tab_menu[0].type;
       } else {
         module = data.tab_menu[1].type;
       }
-      const userOk = tester.testEmail(data.form.username);
-      if (userOk) {
+      // 验证用户名（邮箱）
+      const userValidMessage = tester.testEmail(data.form.username);
+      if (userValidMessage) {
         proxy.$message({
-          message: userOk,
+          message: userValidMessage,
           type: "error",
         });
         return;
       }
+      // 请求验证码
       data.code_btn_state.disable = true;
       accountApi
         .getCode(data.form.username, module)
@@ -165,6 +179,7 @@ export default {
             message: response.data.message,
             type: "success",
           });
+          // 等待，禁用发送按钮，防止多次重复发送验证码
           data.code_btn_state.disable = false;
           data.code_btn_state.loaded = true;
           data.code_btn_state.waiting_time = 60;
@@ -177,6 +192,7 @@ export default {
           }, 1000);
         })
         .catch((error) => {
+          // 请求失败
           proxy.$message({
             message: error.data.message,
             type: "error",
@@ -185,6 +201,7 @@ export default {
         });
     };
 
+    // 根据按钮状态生成按钮文本
     const getCodeButtonText = () => {
       if (data.code_btn_state.disable) {
         return "发送中";
@@ -198,52 +215,76 @@ export default {
       return "获取验证码";
     };
 
+    // 提交表单 登陆 or 注册
     const submitForm = () => {
       proxy.$refs.account_form.validate((valid) => {
         if (valid) {
+          // 禁用提交按钮
+          data.submit_btn_disable = true;
+          data.submit_btn_loading = false;
           const username = data.form.username;
           const password = sha1(data.form.password);
           const code = data.form.code;
-          data.submit_btn_disable = true;
+          // 清除按钮状态
+          const reset_button_tatus = () => {
+            // 释放提交按钮
+            data.submit_btn_disable = false;
+            data.submit_btn_loading = false;
+            // 释放验证码按钮
+            data.code_btn_state.disable = false;
+            data.code_btn_state.waiting_time = 0;
+            data.code_btn_state.loaded = false;
+          };
           if (data.current_menu === "login") {
+            // 提交登陆
             accountApi
               .login(username, password, code)
               .then((resp) => {
+                // 登陆成功
                 proxy.$message({
                   message: resp.data.message,
                   type: "success",
                 });
+                // 跳转到控制台
+                proxy.$router.push({ name: "Home" });
               })
               .catch((error) => {
+                // 登陆失败
                 proxy.$message({
                   message: error.message,
                   type: "error",
                 });
               })
-              .finally(() => {
-                data.submit_btn_disable = false;
-              });
+              .finally(reset_button_tatus);
           } else {
+            // 提交注册
             accountApi
               .register(username, password, code)
               .then((resp) => {
+                // 注册成功
                 proxy.$message({
                   message: resp.data.message,
                   type: "success",
                 });
+                // 跳转到登陆
+                reset();
               })
               .catch((error) => {
+                // 注册失败
                 proxy.$message({
                   message: error.message,
                   type: "error",
                 });
               })
-              .finally(() => {
-                data.submit_btn_disable = false;
-              });
+              .finally(reset_button_tatus);
           }
         }
       });
+    };
+
+    const reset = () => {
+      proxy.$refs.account_form.resetFields();
+      data.current_menu = "login";
     };
 
     onBeforeUnmount(() => {
@@ -298,6 +339,11 @@ export default {
 .form-label {
   display: block;
   color: #fff;
+  margin-top: 1.2em;
   font-size: 14px;
+}
+
+.commit-button {
+  margin-top: 1.5em;
 }
 </style>

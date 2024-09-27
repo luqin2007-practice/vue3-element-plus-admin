@@ -5,7 +5,7 @@
   </svg>
 </template>
 
-<script>
+<script lang="ts">
 import { ref, computed } from "vue";
 
 export default {
@@ -22,7 +22,7 @@ export default {
       default: "",
     },
   },
-  setup(props) {
+  setup(props: any) {
     // 不直接使用 className
     // 防止父对象变化，class 未变时，图标重渲染
     const svgClassName = ref(props.className);
@@ -35,7 +35,7 @@ export default {
 <style lang="scss" scoped>
 .svg-class {
   width: 1em;
-  height: 1px;
+  height: 1em;
   fill: currentColor;
 }
 </style>

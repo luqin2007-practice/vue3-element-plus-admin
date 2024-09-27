@@ -5,12 +5,10 @@ import store from "./store";
 import elementui from "./plugins/elementui";
 import axios from "./utils/request";
 
-import "@/components/svgIcon/svg";
 import SvgIcon from "./components/svgIcon/SvgIcon.vue";
+import "@/components/svgIcon/svg";
 
 const app = createApp(App);
-
-app.config.globalProperties.$axios = axios;
 
 app
   .use(store)
