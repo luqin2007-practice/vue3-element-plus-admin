@@ -34,7 +34,7 @@ service.interceptors.response.use(
     const data = response.data;
     if (data.resCode !== 0) {
       console.log(response);
-      return Promise.reject(response);
+      return Promise.reject(response.data);
     }
     return response;
   },

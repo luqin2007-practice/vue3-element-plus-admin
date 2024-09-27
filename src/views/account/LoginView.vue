@@ -80,6 +80,7 @@ import { toRefs, reactive, getCurrentInstance, onBeforeUnmount } from "vue";
 import tester from "@/utils/validate";
 import accountApi from "@/api/account";
 import sha1 from "js-sha1";
+import { useStore } from "vuex";
 
 export default {
   setup() {
@@ -138,6 +139,7 @@ export default {
     });
 
     const toggleMenu = (type) => (data.current_menu = type);
+    const store = useStore();
 
     /*
     const getCode = () => {
@@ -222,9 +224,7 @@ export default {
           // 禁用提交按钮
           data.submit_btn_disable = true;
           data.submit_btn_loading = false;
-          const username = data.form.username;
-          const password = sha1(data.form.password);
-          const code = data.form.code;
+          const { username, password, code } = data.form;
           // 清除按钮状态
           const reset_button_tatus = () => {
             // 释放提交按钮
@@ -237,8 +237,8 @@ export default {
           };
           if (data.current_menu === "login") {
             // 提交登陆
-            accountApi
-              .login(username, password, code)
+            store
+              .dispatch("app/loginAction", { user: username, password, code })
               .then((resp) => {
                 // 登陆成功
                 proxy.$message({

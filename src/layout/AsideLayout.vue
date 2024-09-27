@@ -7,6 +7,7 @@
     text-color="#fff"
     active0-text-color="#ffd04b"
     :default-active="current_path"
+    :collapse="collapse"
   >
     <template v-for="item in routers" :key="item.path">
       <template v-if="isMenuDisplay(item)">
@@ -43,16 +44,18 @@
               :icon-name="item.meta.icon"
               class-name="aside-menu-svg"
             />
-            {{ item.meta.title }}
+            <span>{{ item.meta.title }}</span>
           </template>
           <template v-for="child in item.children" :key="child.path">
             <el-menu-item v-if="isMenuDisplay(child)" :index="child.path">
-              <svg-icon
-                v-if="hasIcon(child)"
-                :icon-name="child.meta.icon"
-                class-name="aside-menu-svg"
-              />
-              {{ child.meta.title }}
+              <template #title>
+                <svg-icon
+                  v-if="hasIcon(child)"
+                  :icon-name="child.meta.icon"
+                  class-name="aside-menu-svg"
+                />
+                <span>{{ child.meta.title }}</span>
+              </template>
             </el-menu-item>
           </template>
         </el-sub-menu>
@@ -63,11 +66,13 @@
 
 <script setup lang="ts">
 import SvgIcon from "@/components/svgIcon/SvgIcon.vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter, useRoute, RouteRecordRaw } from "vue-router";
+import { useStore } from "vuex";
 
 const { options } = useRouter();
 const { path } = useRoute();
+const store = useStore();
 const routers = options.routes;
 
 // 仅显示包含 meta.title 的项
@@ -83,11 +88,16 @@ const hasOneChildMenu = (children: RouteRecordRaw[]) => {
   return false;
 };
 
-// 展开的导航
+// 导航
 const current_path = computed(() => path);
+const collapse = computed(() => store.state.app.collapse);
 
 // logo
-const logo = computed(() => require("@/assets/images/logo.png"));
+const logo_max = computed(() => require("@/assets/images/logo.png"));
+const logo_min = computed(() => require("@/assets/images/logo-min.png"));
+const logo = computed(() => {
+  return store.state.app.collapse ? logo_min.value : logo_max.value;
+});
 </script>
 
 <style lang="scss" scoped>
@@ -112,10 +122,8 @@ const logo = computed(() => require("@/assets/images/logo.png"));
 }
 
 .logo {
-  padding: 20px 10px;
+  width: 100%;
   border-bottom: 1px solid #2d4153;
-  img {
-    margin: auto;
-  }
+  text-align: center;
 }
 </style>
